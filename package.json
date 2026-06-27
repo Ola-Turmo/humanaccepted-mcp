@@ -1,0 +1,22 @@
+{
+  "name": "@humanaccepted/mcp",
+  "version": "0.1.0",
+  "description": "MCP server for HumanAccepted — auto-emits tamper-evident receipts on every tool call for EU AI Act Article 12 compliance.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "main": "./dist/server.js",
+  "bin": { "humanaccepted-mcp": "./dist/cli.js" },
+  "files": ["dist", "README.md"],
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/cli.js",
+    "test": "node --test test/*.test.mjs"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.4.0"
+  }
+}
