@@ -1,0 +1,364 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>humanaccepted-mcp · Signed receipts on every AI tool call</title>
+<meta name="description" content="MCP server that emits signed, EU AI Act Article 12-compliant receipts on every AI tool call. Drop-in for Claude Desktop, Cursor, any MCP host.">
+<meta name="theme-color" content="#0E5C4A">
+<meta property="og:title" content="humanaccepted-mcp · Signed receipts on every AI tool call">
+<meta property="og:description" content="One block of MCP config. Zero agent code changes. Article 12 done.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://github.com/Ola-Turmo/humanaccepted-mcp">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230E5C4A'/%3E%3Ctext x='50%25' y='52%25' text-anchor='middle' dominant-baseline='central' font-family='-apple-system,system-ui,sans-serif' font-size='18' font-weight='700' fill='%23FAF7F2'%3EHA%3C/text%3E%3C/svg%3E">
+<style>
+  :root {
+    --ha-green: #0E5C4A;
+    --ha-green-dark: #084032;
+    --ha-cream: #FAF7F2;
+    --ha-ink: #0B1A2E;
+    --ha-muted: #5a6675;
+    --ha-line: #e2e0d8;
+    --ha-code-bg: #0B1A2E;
+    --ha-code-fg: #e8edf2;
+    --ha-mono: ui-monospace, "SF Mono", "JetBrains Mono", "Cascadia Mono", Menlo, Consolas, monospace;
+    --ha-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: var(--ha-sans);
+    background: var(--ha-cream);
+    color: var(--ha-ink);
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: var(--ha-green); text-decoration: none; border-bottom: 1px solid transparent; }
+  a:hover { border-bottom-color: var(--ha-green); }
+  code { font-family: var(--ha-mono); font-size: 0.92em; }
+  p code, li code {
+    background: #ece9df;
+    padding: 1px 6px;
+    border-radius: 4px;
+    color: var(--ha-green-dark);
+  }
+  .wrap { max-width: 880px; margin: 0 auto; padding: 0 24px; }
+
+
+  header.mast {
+    padding: 28px 0 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--ha-line);
+    margin-bottom: 48px;
+  }
+  .brand { font-weight: 700; font-size: 18px; letter-spacing: -0.01em; color: var(--ha-green); border: none; }
+  .brand-mark { display: inline-block; width: 28px; height: 28px; background: var(--ha-green); color: var(--ha-cream); border-radius: 6px; text-align: center; line-height: 28px; font-size: 14px; margin-right: 8px; vertical-align: middle; }
+  nav.top a { margin-left: 20px; color: var(--ha-muted); font-size: 14px; font-weight: 500; }
+  nav.top a:hover { color: var(--ha-green); border-bottom-color: transparent; }
+
+
+  .hero { padding: 24px 0 56px; }
+  .eyebrow {
+    display: inline-block;
+    background: rgba(14, 92, 74, 0.08);
+    color: var(--ha-green);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    padding: 6px 12px;
+    border-radius: 999px;
+    margin-bottom: 24px;
+  }
+  h1 {
+    font-size: clamp(36px, 6vw, 56px);
+    line-height: 1.05;
+    letter-spacing: -0.02em;
+    margin: 0 0 20px;
+    font-weight: 700;
+  }
+  h1 em { font-style: normal; color: var(--ha-green); }
+  .lede {
+    font-size: clamp(17px, 2.2vw, 20px);
+    color: var(--ha-muted);
+    max-width: 640px;
+    margin: 0 0 32px;
+  }
+  .cta-row { display: flex; gap: 12px; flex-wrap: wrap; }
+  .cta {
+    display: inline-flex;
+    align-items: center;
+    padding: 12px 20px;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 15px;
+    border: 1px solid transparent;
+  }
+  .cta-primary { background: var(--ha-green); color: var(--ha-cream); border-color: var(--ha-green); }
+  .cta-primary:hover { background: var(--ha-green-dark); border-color: var(--ha-green-dark); border-bottom-color: var(--ha-green-dark); }
+  .cta-secondary { background: transparent; color: var(--ha-ink); border-color: var(--ha-line); }
+  .cta-secondary:hover { border-color: var(--ha-ink); border-bottom-color: var(--ha-ink); }
+
+
+  section { padding: 40px 0; border-top: 1px solid var(--ha-line); }
+  section.tight { padding: 32px 0; }
+  h2 {
+    font-size: clamp(22px, 3vw, 28px);
+    letter-spacing: -0.01em;
+    margin: 0 0 16px;
+  }
+  h3 { font-size: 17px; margin: 24px 0 8px; }
+  p { margin: 0 0 16px; }
+
+  pre {
+    background: var(--ha-code-bg);
+    color: var(--ha-code-fg);
+    padding: 20px 22px;
+    border-radius: 10px;
+    overflow-x: auto;
+    font-family: var(--ha-mono);
+    font-size: 13px;
+    line-height: 1.55;
+    margin: 16px 0 24px;
+    border: 1px solid #142940;
+  }
+  pre code { background: transparent; padding: 0; color: inherit; }
+
+
+  .steps {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 16px;
+    margin: 20px 0 0;
+  }
+  .step {
+    border: 1px solid var(--ha-line);
+    border-radius: 10px;
+    padding: 18px 18px 4px;
+    background: white;
+  }
+  .step .num {
+    display: inline-block;
+    width: 24px;
+    height: 24px;
+    line-height: 24px;
+    text-align: center;
+    background: var(--ha-green);
+    color: var(--ha-cream);
+    border-radius: 50%;
+    font-size: 13px;
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+  .step h4 { font-size: 15px; margin: 0 0 6px; }
+  .step p { font-size: 14px; color: var(--ha-muted); margin: 0 0 14px; }
+
+
+  .art12 {
+    background: linear-gradient(135deg, #0E5C4A 0%, #084032 100%);
+    color: var(--ha-cream);
+    padding: 28px 28px;
+    border-radius: 12px;
+    margin: 24px 0 0;
+  }
+  .art12 h2 { color: var(--ha-cream); margin-top: 0; }
+  .art12 a { color: #b9e7d9; border-bottom-color: rgba(185, 231, 217, 0.3); }
+  .art12 a:hover { color: white; border-bottom-color: white; }
+  .art12 .deadline {
+    display: inline-block;
+    background: rgba(255,255,255,0.12);
+    border: 1px solid rgba(255,255,255,0.25);
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-weight: 600;
+    margin-top: 8px;
+    font-family: var(--ha-mono);
+    font-size: 14px;
+  }
+
+
+  .related {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 14px;
+    margin: 16px 0 0;
+  }
+  .related a {
+    display: block;
+    padding: 16px;
+    border: 1px solid var(--ha-line);
+    border-radius: 10px;
+    background: white;
+    color: var(--ha-ink);
+    border-bottom: 1px solid var(--ha-line);
+  }
+  .related a:hover { border-color: var(--ha-green); border-bottom-color: var(--ha-green); }
+  .related .r-title { font-weight: 600; color: var(--ha-green); display: block; margin-bottom: 4px; font-size: 15px; }
+  .related .r-desc { color: var(--ha-muted); font-size: 14px; }
+
+
+  footer {
+    padding: 32px 0 48px;
+    border-top: 1px solid var(--ha-line);
+    margin-top: 48px;
+    color: var(--ha-muted);
+    font-size: 14px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px 24px;
+    justify-content: space-between;
+    align-items: center;
+  }
+  footer .build { font-family: var(--ha-mono); font-size: 13px; }
+
+  @media (max-width: 600px) {
+    header.mast { flex-direction: column; gap: 16px; align-items: flex-start; }
+    nav.top a { margin-left: 0; margin-right: 16px; }
+    .hero { padding-top: 8px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="mast">
+    <a class="brand" href="/"><span class="brand-mark">HA</span>humanaccepted-mcp</a>
+    <nav class="top">
+      <a href="#what">What</a>
+      <a href="#receipt">Receipt</a>
+      <a href="#verify">Verify</a>
+      <a href="#article-12">Article 12</a>
+      <a href="https://github.com/Ola-Turmo/humanaccepted-mcp">GitHub →</a>
+    </nav>
+  </header>
+
+  <section class="hero" style="border-top:none; padding-top:0;">
+    <span class="eyebrow">MCP server · Apache-2.0 · open spec</span>
+    <h1>Signed receipts on<br>every <em>AI tool call</em>.</h1>
+    <p class="lede">Drop-in Model Context Protocol server. One block of config, zero changes to your agent — and every tool call gets a signed <code>tool_call</code> receipt, chained, offline-verifiable, and <strong>EU AI Act Article 12</strong>-ready.</p>
+    <div class="cta-row">
+      <a class="cta cta-primary" href="https://github.com/Ola-Turmo/humanaccepted-mcp">View on GitHub →</a>
+      <a class="cta cta-secondary" href="https://github.com/Ola-Turmo/humanaccepted-spec">Read the spec</a>
+    </div>
+  </section>
+
+  <section id="what">
+    <h2>What is this?</h2>
+    <p>The <a href="https://modelcontextprotocol.io">Model Context Protocol</a> is the standard wiring layer between AI agents and the tools they call — Claude Desktop, Cursor, Claude Code, and dozens of others speak it. <code>humanaccepted-mcp</code> is a passthrough MCP server that <em>wraps every <code>tools/call</code></em> the agent makes, emitting a pair of signed receipts to the <a href="https://github.com/Ola-Turmo/humanaccepted">HumanAccepted</a> registry: one before the call (intent + inputs), one after (output + duration + result). Each pair is chained to the previous via <code>chain.prev</code>, and the whole session is tagged with a stable <code>run_id</code>.</p>
+    <p>All signing happens server-side in the Worker with your tenant's Ed25519 key. The MCP server itself holds no key material — it just authenticates with <code>Bearer sk_…</code> and the Worker does the cryptography. Receipts are content-addressed (the <code>canonical</code> field is the JCS-canonicalized JSON the signature signs over), so anyone with the tenant's public key can verify them offline — no network round-trip needed.</p>
+
+    <h3>3-step setup</h3>
+    <div class="steps">
+      <div class="step">
+        <span class="num">1</span>
+        <h4>Bootstrap a tenant</h4>
+        <p>One call to get your <code>sk_…</code> API key + tenant id.</p>
+      </div>
+      <div class="step">
+        <span class="num">2</span>
+        <h4>Add to MCP config</h4>
+        <p>One JSON block in Claude Desktop / Cursor. No agent code changes.</p>
+      </div>
+      <div class="step">
+        <span class="num">3</span>
+        <h4>Run your agent</h4>
+        <p>Every tool call is now signed, chained, and exportable as Article 12 evidence.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="receipt">
+    <h2>Receipt shape</h2>
+    <p>Receipts follow the open <a href="https://github.com/Ola-Turmo/humanaccepted-spec">HumanAccepted spec v1.1</a>, which defines three new kinds: <code>tool_call</code>, <code>sub_agent</code>, <code>model_invocation</code>. The MCP server emits <code>tool_call</code> pairs. Minimal example:</p>
+<pre><code>{
+  "kind": "tool_call",
+  "version": 2,
+  "tenant": "ten_3K9F2X",
+  "id": "rcp_4PZ8QJ2M1X9Y7K0ABCDEF1234",
+  "issued_at": "2026-06-28T09:53:11.421Z",
+  "agent": {
+    "id": "my_agent",
+    "type": "claude-sonnet-4.6",
+    "run_id": "run_01HF3R8K2Q5P9X7Z4M6V0YJWBN"
+  },
+  "tool": {
+    "name": "get_weather",
+    "version": "1.0.0",
+    "input": { "city": "Oslo" },
+    "output": { "temp_c": 18, "conditions": "cloudy" },
+    "duration_ms": 342,
+    "result": "ok"
+  },
+  "chain": {
+    "prev": "rcp_4PZ8QJ2M1X9Y7K0ABCDEF1233",
+    "run_id": "run_01HF3R8K2Q5P9X7Z4M6V0YJWBN"
+  },
+  "canonical": "ha:v1:tool_call:ten_3K9F2X:rcp_…:{…}",
+  "signature": {
+    "alg": "ed25519",
+    "key_id": "k_8N4Q",
+    "value": "7c3f…"
+  }
+}</code></pre>
+  </section>
+
+  <section id="verify">
+    <h2>Verify it yourself</h2>
+    <p>The signature is over the <code>canonical</code> field (JCS-canonicalized JSON). Anyone with the tenant's public key can verify offline — no API call needed:</p>
+<pre><code># Python verifier (from humanaccepted-spec/verifier/python)
+python3 verifier/python/verify.py \
+  --receipt rcp_4PZ8QJ2M1X9Y7K0ABCDEF1234.json \
+  --pubkey  tenant_ten_3K9F2X.pub
+
+# TypeScript verifier
+npx @humanaccepted/verify \
+  --receipt rcp_4PZ8QJ2M1X9Y7K0ABCDEF1234.json \
+  --pubkey  tenant_ten_3K9F2X.pub
+
+# Elixir / Go / Rust verifiers also available
+ls verifier/</code></pre>
+    <p>Then walk the chain by following <code>chain.prev</code> until it goes <code>null</code> — that's your full session, in order.</p>
+  </section>
+
+  <section id="article-12" class="tight">
+    <div class="art12">
+      <h2 style="margin-top:0;">EU AI Act Article 12</h2>
+      <p>Providers of high-risk AI systems must keep <strong>automatic, tamper-evident logs</strong> of every interaction over the system lifecycle — including tool calls, sub-agent dispatch, and model invocations. <code>humanaccepted-mcp</code> is the drop-in primitive for Article 12: any MCP-compatible agent gets compliant logging with one block of config and zero agent rewrites.</p>
+      <p style="margin-bottom:0;">Read Article 12 in full: <a href="https://artificialintelligenceact.eu/article/12/">artificialintelligenceact.eu/article/12</a></p>
+      <span class="deadline">Deadline: 2 August 2026</span>
+    </div>
+  </section>
+
+  <section>
+    <h2>Related projects</h2>
+    <p>HumanAccepted is a small ecosystem of open repos. The MCP server is one piece — here are the others.</p>
+    <div class="related">
+      <a href="https://github.com/Ola-Turmo/humanaccepted-spec">
+        <span class="r-title">humanaccepted-spec</span>
+        <span class="r-desc">Open spec v1.1. Receipt shapes, canonical form, verifiers in 5 languages.</span>
+      </a>
+      <a href="https://github.com/Ola-Turmo/humanaccepted">
+        <span class="r-title">humanaccepted</span>
+        <span class="r-desc">Host product. Worker + Pages dashboard. v0.3 PR #6 adds these receipt kinds.</span>
+      </a>
+      <a href="https://humanaccepted.ola-turmo.workers.dev/">
+        <span class="r-title">Live Worker API</span>
+        <span class="r-desc">The registry this MCP server writes to. Try <code>POST /v1/bootstrap</code>.</span>
+      </a>
+      <a href="https://humanaccepted-new.pages.dev/">
+        <span class="r-title">Host dashboard</span>
+        <span class="r-desc">Browse receipts, generate Article 12 exports, manage your tenant.</span>
+      </a>
+    </div>
+  </section>
+
+  <footer>
+    <div>Apache-2.0 · Ola Turmo · 2026</div>
+    <div class="build">build 17c0e50 · mimo/mcp-readme-and-landing</div>
+  </footer>
+
+</div>
+</body>
+</html>
